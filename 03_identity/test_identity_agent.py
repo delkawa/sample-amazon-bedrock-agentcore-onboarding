@@ -47,8 +47,13 @@ async def cost_estimator_tool(architecture_description, access_token: str) -> st
     session_id = f"runtime-with-identity-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')}"
     if access_token:
         logger.info("✅ Successfully load the access token from AgentCore Identity!")
-        for element in access_token.split("."):
-            logger.info(f"\t{json.loads(base64.b64decode(element).decode())}")
+        def decode_jwt_part(part: str) -> bytes:
+            padded = part + '=' * ((4 - len(part) % 4) % 4)
+            return base64.urlsafe_b64decode(padded)
+        token_header, token_payload, token_signature = access_token.split(".")
+        logger.info(f"\tHeader: {json.loads(decode_jwt_part(token_header).decode())}")
+        logger.info(f"\tPayload: {json.loads(decode_jwt_part(token_payload).decode())}")
+        logger.info(f"\tSignature: {decode_jwt_part(token_signature).hex()}")
 
     headers = {
         "Authorization": f"Bearer {access_token}",
